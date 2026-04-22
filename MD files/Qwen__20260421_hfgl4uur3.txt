@@ -1,0 +1,30 @@
+
+## System Components
+
+### Frontend
+- Web-based interface
+- HTML/CSS
+- Responsive design
+
+### Backend
+- Python (Flask or FastAPI)
+- API server
+
+### AI/ML Modules
+1. **Face Detection & Analysis Module**
+   - Technologies: OpenCV, Dlib, MediaPipe
+
+2. **Face Shape Classification Model**
+   - CNN / Transfer Learning
+
+3. **3D Head Reconstruction Module**
+   - 3DMM / Deep3DFace / PIFuHD
+
+4. **Hairstyle Recommendation Engine**
+   - Rule-based + ML matching
+
+### Database
+- Hairstyle database categorized by face shape compatibility
+
+---
+*HAIRGURU Project - 2nd Semester Innovation Project*
