@@ -1,0 +1,10 @@
+django>=4.2
+djangorestframework>=3.14
+django-cors-headers>=4.3
+psycopg2-binary>=2.9
+Pillow>=10.0
+python-dotenv>=1.0
+tensorflow>=2.15
+opencv-python-headless>=4.8
+mediapipe>=0.10
+numpy>=1.24
