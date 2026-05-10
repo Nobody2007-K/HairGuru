@@ -39,6 +39,7 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 .text-gradient {
     background: linear-gradient(to bottom, #ffffff 0%, #a1a1a1 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -232,25 +233,9 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 <section id="trends" class="px-6 py-32 bg-[#050505]">
   <div class="max-w-6xl mx-auto text-center">
     <h2 class="text-3xl text-white mb-16 tracking-widest uppercase">Trending Styles</h2>
-    <div class="grid md:grid-cols-3 gap-10">
-      <div class="group overflow-hidden rounded-xl border border-white/5">
-        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" class="w-full grayscale group-hover:grayscale-0 group-hover:scale-110 transition duration-1000">
-        <div class="p-6 bg-black">
-          <h3 class="text-white font-black text-[10px] tracking-widest uppercase">The Executive Fade</h3>
-        </div>
-      </div>
-      <div class="group overflow-hidden rounded-xl border border-white/5">
-        <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce" class="w-full grayscale group-hover:grayscale-0 group-hover:scale-110 transition duration-1000">
-        <div class="p-6 bg-black">
-          <h3 class="text-white font-black text-[10px] tracking-widest uppercase">Modern Crop</h3>
-        </div>
-      </div>
-      <div class="group overflow-hidden rounded-xl border border-white/5">
-        <img src="https://images.unsplash.com/photo-1520975916090-3105956dac38" class="w-full grayscale group-hover:grayscale-0 group-hover:scale-110 transition duration-1000">
-        <div class="p-6 bg-black">
-          <h3 class="text-white font-black text-[10px] tracking-widest uppercase">Urban Quiff</h3>
-        </div>
-      </div>
+    <div id="trends-grid" class="grid md:grid-cols-3 gap-10">
+      <!-- Hairstyles will be dynamically loaded here from backend -->
+      <p class="text-gray-500 text-xs tracking-widest uppercase col-span-3">Loading trending styles from database...</p>
     </div>
   </div>
 </section>
@@ -311,15 +296,125 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
     window.scrollTo({ top: document.getElementById("uploadSection").offsetTop - 50, behavior: 'smooth' });
   }
 
-  function analyze(){
+  const API_BASE = 'http://127.0.0.1:8000/api';
+
+  // Demo logic to auto-login to bypass authentication for analysis endpoint
+  async function ensureLoggedIn() {
+    try {
+      const loginRes = await fetch(`${API_BASE}/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'demo', password: 'password123' }),
+        credentials: 'omit' // Optional depending on how frontend is hosted
+      });
+      if (!loginRes.ok) {
+         await fetch(`${API_BASE}/auth/register/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'demo', email: 'demo@example.com', password: 'password123', password_confirm: 'password123' })
+         });
+         await fetch(`${API_BASE}/auth/login/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'demo', password: 'password123' })
+         });
+      }
+    } catch(err) {
+      console.warn('Backend not reachable or login failed', err);
+    }
+  }
+
+  // Dynamically load hairstyles from the dataset
+  async function loadTrending() {
+    try {
+      const res = await fetch(`${API_BASE}/hairstyles/`);
+      if (res.ok) {
+        const data = await res.json();
+        const styles = data.results || data;
+        const grid = document.getElementById('trends-grid');
+        grid.innerHTML = '';
+        
+        const fallbackImages = [
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
+            'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce',
+            'https://images.unsplash.com/photo-1520975916090-3105956dac38'
+        ];
+
+        styles.slice(0, 3).forEach((style, index) => {
+           const imgUrl = style.image_url || fallbackImages[index % fallbackImages.length];
+           grid.innerHTML += `
+            <div class="group overflow-hidden rounded-xl border border-white/5 h-full flex flex-col">
+              <img src="${imgUrl}" class="w-full h-64 object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition duration-1000">
+              <div class="p-6 bg-black flex-grow">
+                <h3 class="text-white font-black text-[10px] tracking-widest uppercase mb-2">${style.name}</h3>
+                <p class="text-gray-500 text-[10px]">${style.description || 'A stylish premium cut.'}</p>
+              </div>
+            </div>
+           `;
+        });
+      }
+    } catch(err) {
+      console.error('Failed to load hairstyles', err);
+      document.getElementById('trends-grid').innerHTML = '<p class="text-red-500 text-xs col-span-3">Could not load backend dataset. Please ensure Django is running.</p>';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    ensureLoggedIn();
+    loadTrending();
+  });
+
+  async function analyze(){
+    const fileInput = document.getElementById("fileInput");
+    if (!fileInput.files.length) {
+       alert("Please upload a clear photo first.");
+       return;
+    }
+
     document.getElementById("uploadSection").classList.add("hidden");
     document.getElementById("loading").classList.remove("hidden");
-    setTimeout(() => {
-      alert("Analysis Complete! Recommended: The Executive Fade[cite: 1]");
+    
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+
+    try {
+      const res = await fetch(`${API_BASE}/analyze/`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
       document.getElementById("loading").classList.add("hidden");
-    }, 2500);
+
+      if (res.ok) {
+        const primaryShape = data.primary_shape;
+        const recommendations = data.recommended_hairstyles.map(h => h.name).join(', ');
+        
+        // Show result dynamically
+        document.getElementById("uploadSection").innerHTML = `
+          <div class="max-w-2xl mx-auto glass p-16 rounded-3xl text-center">
+            <h3 class="text-[var(--gold)] text-2xl mb-4 font-black uppercase tracking-[0.3em]">Analysis Complete</h3>
+            <p class="text-white text-lg mb-6">Face Shape: <span class="text-gradient">${primaryShape}</span></p>
+            <div class="bg-black/50 p-6 rounded-xl border border-white/10 mb-8">
+               <p class="text-[var(--gold)] text-xs font-bold tracking-widest uppercase mb-3">Top Recommendations</p>
+               <p class="text-gray-400 text-sm">${recommendations || 'None found in dataset'}</p>
+            </div>
+            <button onclick="location.reload()" class="btn-premium">Start Over</button>
+          </div>
+        `;
+        document.getElementById("uploadSection").classList.remove("hidden");
+      } else {
+        alert("Analysis failed: " + (data.error || "Please ensure you're logged in."));
+        document.getElementById("uploadSection").classList.remove("hidden");
+      }
+    } catch (err) {
+      document.getElementById("loading").classList.add("hidden");
+      document.getElementById("uploadSection").classList.remove("hidden");
+      alert("Network error. Is the backend running at localhost:8000?");
+    }
   }
 </script>
 
 </body>
 </html>
+
