@@ -127,12 +127,17 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 <body>
 
 <!-- NAVIGATION -->
-<header class="flex justify-between items-center px-12 py-8 bg-black/40 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5">
-  <h1 class="text-2xl font-black tracking-widest text-white">HAIR<span class="text-[#d4af37]">GURU</span></h1>
-  <nav class="hidden md:flex space-x-12 text-[10px] font-bold uppercase tracking-[0.3em]">
-    <a href="#features" class="text-gray-400 hover:text-white transition">Services</a>
-    <a href="#hair-types" class="text-gray-400 hover:text-white transition">Hair Care</a>
-    <a href="#trends" class="text-gray-400 hover:text-white transition">Trending</a>
+<header class="flex flex-wrap justify-between items-center px-6 md:px-12 py-4 md:py-8 bg-black/40 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5">
+  <h1 class="text-xl md:text-2xl font-black tracking-widest text-white">HAIR<span class="text-[#d4af37]">GURU</span></h1>
+  <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+    </svg>
+  </button>
+  <nav id="nav-menu" class="hidden w-full md:w-auto mt-4 md:mt-0 md:flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-12 text-[10px] font-bold uppercase tracking-[0.3em] items-center">
+    <a href="#features" class="text-gray-400 hover:text-white transition py-2 md:py-0">Services</a>
+    <a href="#hair-types" class="text-gray-400 hover:text-white transition py-2 md:py-0">Hair Care</a>
+    <a href="#trends" class="text-gray-400 hover:text-white transition py-2 md:py-0">Trending</a>
   </nav>
 </header>
 
@@ -152,31 +157,31 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 </section>
 
 <!-- SERVICES -->
-<section id="features" class="px-6 py-32 max-w-7xl mx-auto">
+<section id="features" class="px-6 py-16 md:py-32 max-w-7xl mx-auto">
   <div class="grid md:grid-cols-4 gap-6">
     <div class="card-3d-wrap" data-aos="fade-up" data-aos-delay="100">
-      <div class="card-3d-inner glass p-10 text-center h-full rounded-xl">
+      <div class="card-3d-inner glass p-6 md:p-10 text-center h-full rounded-xl">
         <div class="text-2xl mb-6">✂️</div>
         <h3 class="text-white text-[10px] font-black uppercase tracking-widest mb-3">Hair Suggestion</h3>
         <p class="text-[11px] text-gray-500">Selection based on geometry[cite: 1].</p>
       </div>
     </div>
     <div class="card-3d-wrap" data-aos="fade-up" data-aos-delay="200">
-      <div class="card-3d-inner glass p-10 text-center h-full rounded-xl">
+      <div class="card-3d-inner glass p-6 md:p-10 text-center h-full rounded-xl">
         <div class="text-2xl mb-6">🧴</div>
         <h3 class="text-white text-[10px] font-black uppercase tracking-widest mb-3">Hair Care</h3>
         <p class="text-[11px] text-gray-500">Routines for your texture[cite: 1].</p>
       </div>
     </div>
     <div class="card-3d-wrap" data-aos="fade-up" data-aos-delay="300">
-      <div class="card-3d-inner glass p-10 text-center h-full rounded-xl">
+      <div class="card-3d-inner glass p-6 md:p-10 text-center h-full rounded-xl">
         <div class="text-2xl mb-6">🧔</div>
         <h3 class="text-white text-[10px] font-black uppercase tracking-widest mb-3">Beard Design</h3>
         <p class="text-[11px] text-gray-500">Sculpting advice for jawlines[cite: 1].</p>
       </div>
     </div>
     <div class="card-3d-wrap" data-aos="fade-up" data-aos-delay="400">
-      <div class="card-3d-inner glass p-10 text-center h-full rounded-xl">
+      <div class="card-3d-inner glass p-6 md:p-10 text-center h-full rounded-xl">
         <div class="text-2xl mb-6">👤</div>
         <h3 class="text-white text-[10px] font-black uppercase tracking-widest mb-3">Face Analysis</h3>
         <p class="text-[11px] text-gray-500">Bone structure recognition[cite: 1].</p>
@@ -186,31 +191,31 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 </section>
 
 <!-- HAIR TYPE & ROUTINE SECTION -->
-<section id="hair-types" class="px-6 py-24 max-w-6xl mx-auto">
-    <div class="text-center mb-16" data-aos="fade-up">
-        <h2 class="text-3xl text-white tracking-widest uppercase mb-2">Hair Care by Type</h2>
+<section id="hair-types" class="px-6 py-12 md:py-24 max-w-6xl mx-auto">
+    <div class="text-center mb-12 md:mb-16" data-aos="fade-up">
+        <h2 class="text-2xl md:text-3xl text-white tracking-widest uppercase mb-2">Hair Care by Type</h2>
         <p class="text-[var(--gold)] text-[10px] font-black uppercase tracking-[0.4em]">Select your texture[cite: 1]</p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-4 mb-12">
-        <button onclick="updateRoutine('straight')" class="glass p-8 group hover:border-[var(--gold)] transition-all duration-500">
+        <button onclick="updateRoutine('straight')" class="glass p-6 md:p-8 group hover:border-[var(--gold)] transition-all duration-500">
             <h3 class="text-white text-xs font-bold tracking-widest uppercase group-hover:text-[var(--gold)]">Straight</h3>
             <div class="w-full h-[1px] bg-white/10 my-4 group-hover:bg-[var(--gold)]"></div>
             <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Smooth & Resilient</p>
         </button>
-        <button onclick="updateRoutine('wavy')" class="glass p-8 group hover:border-[var(--gold)] transition-all duration-500">
+        <button onclick="updateRoutine('wavy')" class="glass p-6 md:p-8 group hover:border-[var(--gold)] transition-all duration-500">
             <h3 class="text-white text-xs font-bold tracking-widest uppercase group-hover:text-[var(--gold)]">Wavy</h3>
             <div class="w-full h-[1px] bg-white/10 my-4 group-hover:bg-[var(--gold)]"></div>
             <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Volume & Flow</p>
         </button>
-        <button onclick="updateRoutine('curly')" class="glass p-8 group hover:border-[var(--gold)] transition-all duration-500">
+        <button onclick="updateRoutine('curly')" class="glass p-6 md:p-8 group hover:border-[var(--gold)] transition-all duration-500">
             <h3 class="text-white text-xs font-bold tracking-widest uppercase group-hover:text-[var(--gold)]">Curly</h3>
             <div class="w-full h-[1px] bg-white/10 my-4 group-hover:bg-[var(--gold)]"></div>
             <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Depth & Texture</p>
         </button>
     </div>
 
-    <div id="routine-display" class="glass p-12 rounded-xl border-l-4 border-[var(--gold)]">
+    <div id="routine-display" class="glass p-6 md:p-12 rounded-xl border-l-4 border-[var(--gold)]">
         <div id="routine-content">
             <h4 class="text-white font-black tracking-widest text-sm uppercase mb-6" id="routine-title">Daily Hair Care</h4>
             <div class="grid md:grid-cols-2 gap-8">
@@ -230,9 +235,9 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 </section>
 
 <!-- TRENDING -->
-<section id="trends" class="px-6 py-32 bg-[#050505]">
+<section id="trends" class="px-6 py-16 md:py-32 bg-[#050505]">
   <div class="max-w-6xl mx-auto text-center">
-    <h2 class="text-3xl text-white mb-16 tracking-widest uppercase">Trending Styles</h2>
+    <h2 class="text-2xl md:text-3xl text-white mb-12 md:mb-16 tracking-widest uppercase">Trending Styles</h2>
     <div id="trends-grid" class="grid md:grid-cols-3 gap-10">
       <!-- Hairstyles will be dynamically loaded here from backend -->
       <p class="text-gray-500 text-xs tracking-widest uppercase col-span-3">Loading trending styles from database...</p>
@@ -241,8 +246,8 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 </section>
 
 <!-- UPLOAD & LOADING -->
-<section id="uploadSection" class="hidden py-32 px-6 text-center bg-black">
-  <div class="max-w-2xl mx-auto glass p-16 rounded-3xl">
+<section id="uploadSection" class="hidden py-16 md:py-32 px-4 md:px-6 text-center bg-black">
+  <div class="max-w-2xl mx-auto glass p-8 md:p-16 rounded-3xl">
     <h3 class="text-white text-xl mb-8 uppercase tracking-[0.3em]">Face Analysis</h3>
     <p class="text-gray-500 text-xs mb-10">Upload a clear photo to begin[cite: 1].</p>
     <input type="file" id="fileInput" class="text-xs text-gray-500 mb-10 block mx-auto">
@@ -362,6 +367,27 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
   window.addEventListener('DOMContentLoaded', () => {
     ensureLoggedIn();
     loadTrending();
+    
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const nav = document.getElementById('nav-menu');
+    if (mobileMenuBtn && nav) {
+      mobileMenuBtn.addEventListener('click', () => {
+        nav.classList.toggle('hidden');
+        nav.classList.toggle('flex');
+      });
+      
+      // Close menu on link click
+      const navLinks = nav.querySelectorAll('a');
+      navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          if (!nav.classList.contains('hidden')) {
+            nav.classList.add('hidden');
+            nav.classList.remove('flex');
+          }
+        });
+      });
+    }
   });
 
   async function analyze(){
@@ -417,4 +443,5 @@ h1, h2, h3, h4 { font-family: 'Cinzel', serif; }
 
 </body>
 </html>
+
 
