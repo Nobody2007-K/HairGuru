@@ -1,0 +1,2880 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HairGuru — AI Face Shape Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ===========================
+   CSS CUSTOM PROPERTIES
+=========================== */
+        :root {
+            --ink: #0d0d0d;
+            --ink2: #1a1a1a;
+            --ink3: #2a2a2a;
+            --paper: #f5f0e8;
+            --paper2: #ede7d9;
+            --paper3: #e0d8c8;
+            --rust: #c4503a;
+            --rust2: #a33d29;
+            --gold: #c9913a;
+            --sage: #5a7a5a;
+            --muted: #8a8278;
+            --border: rgba(13, 13, 13, 0.12);
+            --shadow: 0 4px 24px rgba(13, 13, 13, 0.12);
+
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Playfair Display', serif;
+            --font-mono: 'DM Mono', monospace;
+        }
+
+        /* ===========================
+   RESET & BASE
+=========================== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: none;
+            border: none;
+        }
+
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* ===========================
+   CUSTOM CURSOR
+=========================== */
+        #cur {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--rust);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.08s;
+        }
+
+        #cur-ring {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            border: 1.5px solid var(--rust);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.16s ease;
+            opacity: 0.6;
+        }
+
+        body:hover #cur {
+            opacity: 1;
+        }
+
+        /* ===========================
+   NOISE TEXTURE OVERLAY
+=========================== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* ===========================
+   SCROLLBAR
+=========================== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--paper2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--rust);
+        }
+
+        /* ===========================
+   NAVIGATION
+=========================== */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 3rem;
+            background: var(--paper);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .nav.scrolled {
+            background: rgba(245, 240, 232, 0.95);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 2px 16px rgba(13, 13, 13, 0.08);
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            letter-spacing: 0.05em;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo .dot {
+            color: var(--rust);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            transition: color 0.25s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--rust);
+        }
+
+        .nav-links a.active {
+            color: var(--ink);
+        }
+
+        .nav-cta {
+            padding: 0.6rem 1.4rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: background 0.3s;
+        }
+
+        .nav-cta:hover {
+            background: var(--rust);
+            color: var(--paper) !important;
+        }
+
+        .nav-ham {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            padding: 4px;
+        }
+
+        .nav-ham span {
+            display: block;
+            width: 22px;
+            height: 1.5px;
+            background: var(--ink);
+            transition: all 0.3s;
+        }
+
+        /* ===========================
+   HERO
+=========================== */
+        .hero {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding-top: 5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6rem 4rem 4rem 5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--rust);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hero-eyebrow::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 1px;
+            background: var(--rust);
+        }
+
+        .hero-h1 {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 7vw, 7.5rem);
+            line-height: 0.92;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+            margin-bottom: 2rem;
+        }
+
+        .hero-h1 .line2 {
+            color: var(--rust);
+        }
+
+        .hero-sub {
+            font-size: 1.1rem;
+            line-height: 1.75;
+            color: var(--muted);
+            max-width: 420px;
+            margin-bottom: 3rem;
+            font-style: italic;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--rust);
+            color: var(--paper);
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--ink);
+            transform: translateX(-101%);
+            transition: transform 0.35s cubic-bezier(0.6, 0, 0.4, 1);
+        }
+
+        .btn-primary:hover::after {
+            transform: translateX(0);
+        }
+
+        .btn-primary span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.75rem;
+            background: transparent;
+            border: 1px solid var(--ink);
+            color: var(--ink);
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            margin-top: 4rem;
+            padding-top: 3rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-num {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--ink);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 0.3rem;
+        }
+
+        .hero-right {
+            position: relative;
+            background: var(--ink);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-right-bg {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(45deg,
+                    transparent, transparent 40px,
+                    rgba(196, 80, 58, 0.04) 40px, rgba(196, 80, 58, 0.04) 41px);
+        }
+
+        .hero-face-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+        }
+
+        .face-cell {
+            position: relative;
+            overflow: hidden;
+            background: var(--ink2);
+            transition: all 0.5s;
+        }
+
+        .face-cell:hover {
+            background: var(--ink3);
+        }
+
+        .face-cell-label {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            color: var(--paper);
+            opacity: 0.5;
+        }
+
+        .face-cell-shape {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .face-cell-shape svg {
+            width: 60%;
+            height: 60%;
+            opacity: 0.12;
+        }
+
+        .hero-badge {
+            position: relative;
+            z-index: 10;
+            background: var(--rust);
+            color: var(--paper);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .hero-badge-num {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            line-height: 1;
+            display: block;
+        }
+
+        .hero-badge-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        /* ===========================
+   MARQUEE STRIP
+=========================== */
+        .marquee-strip {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 0.9rem 0;
+            overflow: hidden;
+            border-top: 3px solid var(--rust);
+            border-bottom: 3px solid var(--rust);
+            position: relative;
+            z-index: 2;
+        }
+
+        .marquee-inner {
+            display: flex;
+            gap: 3rem;
+            animation: marquee 28s linear infinite;
+            width: max-content;
+        }
+
+        .marquee-item {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .marquee-dot {
+            color: var(--rust);
+            font-size: 1.4rem;
+            line-height: 0;
+        }
+
+        @keyframes marquee {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ===========================
+   SECTION COMMONS
+=========================== */
+        .section {
+            padding: 7rem 5rem;
+        }
+
+        .section-header {
+            margin-bottom: 5rem;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--rust);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 20px;
+            height: 1px;
+            background: var(--rust);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            line-height: 1;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+        }
+
+        .section-sub {
+            font-size: 1.05rem;
+            font-style: italic;
+            color: var(--muted);
+            max-width: 520px;
+            line-height: 1.7;
+            margin-top: 1rem;
+        }
+
+        /* ===========================
+   FACE SHAPES SECTION
+=========================== */
+        .shapes-section {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .shapes-section .section-label {
+            color: var(--rust);
+        }
+
+        .shapes-section .section-title {
+            color: var(--paper);
+        }
+
+        .shapes-section .section-sub {
+            color: rgba(245, 240, 232, 0.5);
+        }
+
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .shape-card {
+            padding: 3rem 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shape-card:last-child {
+            border-right: none;
+        }
+
+        .shape-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--rust);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+
+        .shape-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .shape-card:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .shape-svg-wrap {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 1.5rem;
+        }
+
+        .shape-svg-wrap svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape-name {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            letter-spacing: 0.04em;
+            color: var(--paper);
+            margin-bottom: 0.75rem;
+        }
+
+        .shape-desc {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: rgba(245, 240, 232, 0.5);
+        }
+
+        .shape-tip {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--rust);
+        }
+
+        /* ===========================
+   UPLOAD / ANALYSIS SECTION
+=========================== */
+        .analyze-section {
+            background: var(--paper2);
+        }
+
+        .analyze-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 5rem;
+            align-items: start;
+        }
+
+        .upload-area {
+            border: 1.5px dashed rgba(13, 13, 13, 0.25);
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s;
+            background: var(--paper);
+        }
+
+        .upload-area.drag-over {
+            border-color: var(--rust);
+            background: rgba(196, 80, 58, 0.04);
+        }
+
+        .upload-area input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: none;
+        }
+
+        .upload-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            background: var(--paper);
+            transition: all 0.4s;
+        }
+
+        .upload-area:hover .upload-icon-wrap,
+        .upload-area.drag-over .upload-icon-wrap {
+            border-color: var(--rust);
+            background: var(--rust);
+            color: white;
+        }
+
+        .upload-area:hover .upload-icon-wrap svg,
+        .upload-area.drag-over .upload-icon-wrap svg {
+            stroke: white;
+        }
+
+        .upload-title {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            letter-spacing: 0.04em;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-sub {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-constraints {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .constraint-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .constraint-tag::before {
+            content: '✓';
+            color: var(--sage);
+            font-size: 0.7rem;
+        }
+
+        .upload-preview {
+            margin-top: 1.5rem;
+            display: none;
+            position: relative;
+        }
+
+        .upload-preview img {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        .upload-preview .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--rust);
+            color: white;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.15em;
+            padding: 0.3rem 0.6rem;
+            text-transform: uppercase;
+        }
+
+        #filename-display {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--sage);
+            margin-top: 0.75rem;
+            display: none;
+        }
+
+        .analyze-btn-wrap {
+            margin-top: 1.5rem;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            background: var(--rust);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Result Panel */
+        .result-panel {
+            display: none;
+        }
+
+        .result-panel.show {
+            display: block;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-face-shape {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            letter-spacing: 0.04em;
+            color: var(--rust);
+            line-height: 1;
+        }
+
+        .result-confidence {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        .result-badge {
+            padding: 0.5rem 1rem;
+            background: var(--sage);
+            color: white;
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .result-section {
+            margin-bottom: 2rem;
+        }
+
+        .result-section-title {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--rust);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .cut-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .cut-chip {
+            padding: 0.5rem 1rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .avoid-chips .cut-chip {
+            background: transparent;
+            border: 1px solid var(--rust);
+            color: var(--rust);
+        }
+
+        .result-text {
+            font-size: 0.98rem;
+            line-height: 1.75;
+            color: var(--ink);
+            font-style: italic;
+        }
+
+        .confidence-bar-wrap {
+            margin-top: 0.5rem;
+        }
+
+        .conf-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .conf-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            text-transform: uppercase;
+            width: 70px;
+            flex-shrink: 0;
+        }
+
+        .conf-bar-bg {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+        }
+
+        .conf-bar {
+            height: 100%;
+            background: var(--rust);
+            transition: width 0.8s ease;
+        }
+
+        .conf-pct {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--muted);
+            width: 36px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* Loading state */
+        .loading-state {
+            display: none;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .loading-state.show {
+            display: block;
+        }
+
+        .loader-ring {
+            width: 56px;
+            height: 56px;
+            border: 2px solid var(--border);
+            border-top-color: var(--rust);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .loader-steps {
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .loader-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .loader-step.done {
+            color: var(--sage);
+        }
+
+        .loader-step.active {
+            color: var(--rust);
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        .loader-step.done .step-dot {
+            background: var(--sage);
+        }
+
+        .loader-step.active .step-dot {
+            background: var(--rust);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* ===========================
+   HOW IT WORKS
+=========================== */
+        .how-section {
+            background: var(--paper);
+        }
+
+        .how-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            border: 1px solid var(--border);
+        }
+
+        .how-card {
+            padding: 3rem 2rem;
+            border-right: 1px solid var(--border);
+            position: relative;
+        }
+
+        .how-card:last-child {
+            border-right: none;
+        }
+
+        .how-num {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            line-height: 1;
+            color: var(--paper2);
+            margin-bottom: 1.5rem;
+            transition: color 0.4s;
+        }
+
+        .how-card:hover .how-num {
+            color: var(--rust);
+        }
+
+        .how-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            letter-spacing: 0.04em;
+            color: var(--ink);
+            margin-bottom: 0.75rem;
+        }
+
+        .how-desc {
+            font-size: 0.9rem;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .how-tech {
+            margin-top: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.15em;
+            color: var(--rust);
+            text-transform: uppercase;
+        }
+
+        /* ===========================
+   HAIRSTYLE GALLERY
+=========================== */
+        .gallery-section {
+            background: var(--ink);
+            overflow: hidden;
+        }
+
+        .gallery-section .section-title {
+            color: var(--paper);
+        }
+
+        .gallery-section .section-sub {
+            color: rgba(245, 240, 232, 0.5);
+        }
+
+        .gallery-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1.25rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(245, 240, 232, 0.5);
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--rust);
+            border-color: var(--rust);
+            color: white;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+        }
+
+        .gallery-card {
+            aspect-ratio: 3/4;
+            position: relative;
+            overflow: hidden;
+            background: var(--ink2);
+            cursor: none;
+        }
+
+        .gallery-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(0.6);
+            transition: all 0.6s;
+        }
+
+        .gallery-card:hover img {
+            filter: grayscale(0);
+            transform: scale(1.06);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(13, 13, 13, 0.9) 0%, transparent 60%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 1.5rem;
+            transform: translateY(8px);
+            transition: transform 0.4s;
+        }
+
+        .gallery-card:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+
+        .gallery-style-name {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            letter-spacing: 0.04em;
+            color: var(--paper);
+            margin-bottom: 0.25rem;
+        }
+
+        .gallery-shape-tag {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.18em;
+            color: var(--rust);
+            text-transform: uppercase;
+        }
+
+        /* ===========================
+   AUTH MODALS
+=========================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(13, 13, 13, 0.75);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            padding: 3rem;
+            max-width: 480px;
+            width: 100%;
+            animation: fadeUp 0.35s ease;
+            position: relative;
+        }
+
+        .modal-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            letter-spacing: 0.04em;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-sub {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            font-size: 1.1rem;
+            color: var(--muted);
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--rust);
+        }
+
+        .form-field {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: var(--paper2);
+            border: 1px solid var(--border);
+            color: var(--ink);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--rust);
+            background: var(--paper);
+        }
+
+        .form-input.error {
+            border-color: var(--rust);
+        }
+
+        .form-error {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--rust);
+            margin-top: 0.3rem;
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .form-submit {
+            width: 100%;
+            padding: 1rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            letter-spacing: 0.06em;
+            transition: background 0.3s;
+        }
+
+        .form-submit:hover {
+            background: var(--rust);
+        }
+
+        .modal-switch {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+        }
+
+        .modal-switch a {
+            color: var(--rust);
+            text-decoration: underline;
+            cursor: none;
+        }
+
+        .api-error-box {
+            padding: 0.75rem 1rem;
+            background: rgba(196, 80, 58, 0.08);
+            border: 1px solid rgba(196, 80, 58, 0.3);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--rust);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .api-error-box.show {
+            display: block;
+        }
+
+        /* ===========================
+   HISTORY SECTION
+=========================== */
+        .history-section {
+            background: var(--paper2);
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 5rem 2rem;
+            border: 1px dashed var(--border);
+        }
+
+        .history-empty-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        .history-empty-text {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .history-card {
+            background: var(--paper);
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .history-card:hover {
+            background: var(--paper2);
+        }
+
+        .history-card-date {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-card-shape {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            letter-spacing: 0.04em;
+            color: var(--rust);
+            margin-bottom: 0.5rem;
+        }
+
+        .history-card-cuts {
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* ===========================
+   TOAST
+=========================== */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2000;
+            padding: 1rem 1.5rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            letter-spacing: 0.12em;
+            transform: translateY(200%);
+            transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            max-width: 320px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--sage);
+        }
+
+        .toast.error {
+            border-left: 3px solid var(--rust);
+        }
+
+        .toast.info {
+            border-left: 3px solid var(--gold);
+        }
+
+        /* ===========================
+   FOOTER
+=========================== */
+        footer {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 5rem 5rem 2rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 4rem;
+            padding-bottom: 4rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 2rem;
+        }
+
+        .footer-brand-name {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            letter-spacing: 0.04em;
+            margin-bottom: 1rem;
+        }
+
+        .footer-brand-desc {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: rgba(245, 240, 232, 0.4);
+            font-style: italic;
+            max-width: 280px;
+        }
+
+        .footer-col-title {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--rust);
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            font-size: 0.9rem;
+            color: rgba(245, 240, 232, 0.5);
+            transition: color 0.25s;
+        }
+
+        .footer-links a:hover {
+            color: var(--paper);
+        }
+
+        .footer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-copy {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.15em;
+            color: rgba(245, 240, 232, 0.3);
+            text-transform: uppercase;
+        }
+
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(245, 240, 232, 0.3);
+        }
+
+        /* ===========================
+   USER PROFILE NAV
+=========================== */
+        .user-menu {
+            position: relative;
+        }
+
+        .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--paper2);
+            border: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            color: var(--ink);
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .user-btn:hover {
+            border-color: var(--rust);
+            color: var(--rust);
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--rust);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            color: white;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            min-width: 180px;
+            display: none;
+            z-index: 100;
+        }
+
+        .user-dropdown.show {
+            display: block;
+            animation: fadeUp 0.2s ease;
+        }
+
+        .user-dropdown a,
+        .user-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: left;
+            background: none;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .user-dropdown a:last-child,
+        .user-dropdown button:last-child {
+            border-bottom: none;
+        }
+
+        .user-dropdown a:hover,
+        .user-dropdown button:hover {
+            color: var(--rust);
+            background: var(--paper2);
+        }
+
+        /* ===========================
+   RESPONSIVE
+=========================== */
+        @media (max-width: 1100px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-right {
+                display: none;
+            }
+
+            .hero-left {
+                padding: 6rem 2.5rem 4rem;
+            }
+
+            .shapes-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .shape-card:nth-child(3) {
+                border-right: none;
+            }
+
+            .shape-card:nth-child(4),
+            .shape-card:nth-child(5) {
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .analyze-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .how-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .how-card:nth-child(2) {
+                border-right: none;
+            }
+
+            .how-card:nth-child(3) {
+                border-top: 1px solid var(--border);
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+
+            .history-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .section {
+                padding: 5rem 2.5rem;
+            }
+
+            footer {
+                padding: 4rem 2.5rem 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--paper);
+                border-bottom: 1px solid var(--border);
+                flex-direction: column;
+                gap: 0;
+                padding: 1rem 0;
+            }
+
+            .nav-links.open {
+                display: flex;
+            }
+
+            .nav-links a {
+                padding: 0.75rem 1.5rem;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .nav-ham {
+                display: flex;
+            }
+
+            .shapes-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .shape-card:nth-child(2) {
+                border-right: none;
+            }
+
+            .shape-card:nth-child(n+3) {
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .how-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .how-card {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .history-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .section {
+                padding: 4rem 1.5rem;
+            }
+
+            footer {
+                padding: 3rem 1.5rem 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            #cur,
+            #cur-ring {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shapes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shape-card {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .hero-h1 {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CURSOR -->
+    <div id="cur"></div>
+    <div id="cur-ring"></div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+        <span id="toastMsg">Message here</span>
+    </div>
+
+    <!-- =================== NAV =================== -->
+    <nav class="nav" id="mainNav">
+        <div class="nav-logo">
+            HAIR<span class="dot">●</span>GURU
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a href="#shapes">Face Shapes</a>
+            <a href="#analyze">Analyze</a>
+            <a href="#gallery">Styles</a>
+            <a href="#how">How It Works</a>
+            <!-- Auth buttons (shown when logged out) -->
+            <div id="authButtons" style="display:flex;gap:0.75rem;align-items:center;">
+                <a href="#" onclick="openModal('login'); return false;" style="color:var(--muted);">Log In</a>
+                <a href="#" onclick="openModal('register'); return false;" class="nav-cta">Sign Up</a>
+            </div>
+            <!-- User menu (shown when logged in) -->
+            <div id="userMenuWrap" style="display:none;" class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <div class="user-avatar" id="userAvatar">?</div>
+                    <span id="userNameDisplay">User</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="#history">My History</a>
+                    <a href="#favorites">Saved Styles</a>
+                    <button onclick="logout()">Log Out</button>
+                </div>
+            </div>
+        </div>
+        <button class="nav-ham" id="navHam" onclick="toggleMobileMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- =================== HERO =================== -->
+    <section class="hero" id="hero">
+        <div class="hero-left">
+            <div class="hero-eyebrow">AI-Powered Grooming</div>
+            <h1 class="hero-h1">
+                KNOW YOUR<br>
+                <span class="line2">FACE.</span><br>
+                OWN YOUR<br>
+                LOOK.
+            </h1>
+            <p class="hero-sub">Upload your photo. Our EfficientNet AI maps your bone structure and recommends the exact
+                haircuts built for your face shape — with the ones to avoid.</p>
+            <div class="hero-actions">
+                <a href="#analyze" class="btn-primary"><span>Analyze My Face</span> <span>→</span></a>
+                <a href="#how" class="btn-secondary">See How It Works</a>
+            </div>
+            <div class="hero-stats">
+                <div>
+                    <div class="stat-num">5</div>
+                    <div class="stat-label">Face Shapes</div>
+                </div>
+                <div>
+                    <div class="stat-num">22</div>
+                    <div class="stat-label">Hairstyles</div>
+                </div>
+                <div>
+                    <div class="stat-num">56%</div>
+                    <div class="stat-label">Model Accuracy</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-right">
+            <div class="hero-right-bg"></div>
+            <div class="hero-face-grid">
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <ellipse cx="50" cy="60" rx="38" ry="52" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Oval</div>
+                </div>
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="12" y="12" width="76" height="76" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Square</div>
+                </div>
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="40" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Round</div>
+                </div>
+                <div class="face-cell" style="background:var(--rust);">
+                    <div style="position:relative;z-index:10;text-align:center;">
+                        <span class="hero-badge-num">AI</span>
+                        <span class="hero-badge-label">Face Mapping</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee-strip">
+        <div class="marquee-inner" id="marqueeInner">
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oval Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Square Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Round Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Heart Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oblong Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> EfficientNetB0</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> AI Recommendations</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> 22 Hairstyles</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> PostgreSQL Powered</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oval Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Square Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Round Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Heart Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oblong Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> EfficientNetB0</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> AI Recommendations</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> 22 Hairstyles</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> PostgreSQL Powered</div>
+        </div>
+    </div>
+
+    <!-- =================== FACE SHAPES =================== -->
+    <section class="shapes-section section" id="shapes">
+        <div class="section-header">
+            <div class="section-label">AI Classification</div>
+            <div class="section-title">5 FACE SHAPES</div>
+            <p class="section-sub">Our EfficientNet model classifies your facial geometry into one of five categories —
+                each with its own curated set of recommended and avoided styles.</p>
+        </div>
+        <div class="shapes-grid" id="shapesGrid">
+            <!-- Populated by JS / API -->
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 100" fill="none">
+                        <path d="M40 8 C20 8 8 28 8 52 C8 70 18 85 40 92 C62 85 72 70 72 52 C72 28 60 8 40 8Z"
+                            stroke="#c4503a" stroke-width="2" fill="none" />
+                    </svg>
+                </div>
+                <div class="shape-name">HEART</div>
+                <p class="shape-desc">Wider forehead and cheekbones tapering to a pointed chin.</p>
+                <div class="shape-tip">Soften wide forehead; keep top balanced</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 60 100" fill="none">
+                        <rect x="4" y="8" width="52" height="84" rx="4" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">OBLONG</div>
+                <p class="shape-desc">Longer than wide with fairly uniform width from forehead to jaw.</p>
+                <div class="shape-tip">Reduce face length; avoid excess height</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 96" fill="none">
+                        <ellipse cx="40" cy="48" rx="34" ry="42" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">OVAL</div>
+                <p class="shape-desc">Balanced proportions with slightly wider cheekbones — the "ideal" shape.</p>
+                <div class="shape-tip">Most styles work — avoid extremes</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 80" fill="none">
+                        <circle cx="40" cy="40" r="34" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">ROUND</div>
+                <p class="shape-desc">Similar width and length with soft, curved features.</p>
+                <div class="shape-tip">Add height and angles to reduce roundness</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 80" fill="none">
+                        <rect x="8" y="8" width="64" height="64" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">SQUARE</div>
+                <p class="shape-desc">Strong angular jawline with forehead approximately equal to jaw width.</p>
+                <div class="shape-tip">Texture and clean structure work best</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== ANALYZE =================== -->
+    <section class="analyze-section section" id="analyze">
+        <div class="section-header">
+            <div class="section-label">EfficientNetB0 + PostgreSQL</div>
+            <div class="section-title">ANALYZE YOUR<br>FACE SHAPE</div>
+            <p class="section-sub">Upload a front-facing, well-lit photo. Our AI detects, aligns, and classifies your
+                face — then pulls personalised recommendations from the database.</p>
+        </div>
+        <div class="analyze-grid">
+            <!-- LEFT: Upload -->
+            <div>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp"
+                        onchange="handleFile(event)">
+                    <div class="upload-icon-wrap">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                        </svg>
+                    </div>
+                    <div class="upload-title">DROP PHOTO HERE</div>
+                    <p class="upload-sub">or click to browse files</p>
+                    <div class="upload-constraints">
+                        <span class="constraint-tag">Front-facing</span>
+                        <span class="constraint-tag">Good lighting</span>
+                        <span class="constraint-tag">JPG / PNG / WEBP</span>
+                        <span class="constraint-tag">Max 10MB</span>
+                    </div>
+                </div>
+                <div id="filenameDisplay" class="upload-constraints" style="margin-top:0.75rem;display:none;">
+                    <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--sage);"
+                        id="selectedFileName"></span>
+                </div>
+                <div class="upload-preview" id="uploadPreview">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button class="remove-btn" onclick="resetUpload()">✕ Remove</button>
+                </div>
+                <div class="analyze-btn-wrap">
+                    <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()" disabled>
+                        <span>ANALYZE FACE SHAPE</span>
+                    </button>
+                </div>
+                <p
+                    style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.12em;color:var(--muted);margin-top:1rem;text-align:center;">
+                    Your photo is processed securely and never stored without consent.
+                </p>
+            </div>
+
+            <!-- RIGHT: Result / Loading -->
+            <div>
+                <!-- Idle placeholder -->
+                <div id="idlePlaceholder" style="border:1px dashed var(--border);padding:5rem 2rem;text-align:center;">
+                    <div style="font-size:4rem;opacity:0.15;margin-bottom:1rem;">◉</div>
+                    <p
+                        style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">
+                        Results will appear here</p>
+                    <p style="font-family:var(--font-mono);font-size:0.58rem;color:var(--border);margin-top:0.5rem;">
+                        Upload a photo to begin</p>
+                </div>
+
+                <!-- Loading -->
+                <div class="loading-state" id="loadingState">
+                    <div class="loader-ring"></div>
+                    <div class="loader-text">Processing<span id="loadDots"></span></div>
+                    <div class="loader-steps" id="loaderSteps">
+                        <div class="loader-step done" id="step1">
+                            <div class="step-dot"></div><span>Image received</span>
+                        </div>
+                        <div class="loader-step active" id="step2">
+                            <div class="step-dot"></div><span>Face detection (MediaPipe)</span>
+                        </div>
+                        <div class="loader-step" id="step3">
+                            <div class="step-dot"></div><span>Alignment & preprocessing</span>
+                        </div>
+                        <div class="loader-step" id="step4">
+                            <div class="step-dot"></div><span>EfficientNet classification</span>
+                        </div>
+                        <div class="loader-step" id="step5">
+                            <div class="step-dot"></div><span>Loading DB recommendations</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="result-panel" id="resultPanel">
+                    <div class="result-header">
+                        <div>
+                            <div class="result-face-shape" id="resultShape">OVAL</div>
+                            <div class="result-confidence" id="resultConf">Primary Shape · 84% confidence</div>
+                        </div>
+                        <div class="result-badge" id="resultBadge">Detected</div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Confidence Breakdown</div>
+                        <div class="confidence-bar-wrap" id="confBars"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Recommended Hairstyles</div>
+                        <div class="cut-chips" id="resultCuts"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Styles to Avoid</div>
+                        <div class="cut-chips avoid-chips" id="resultAvoid"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Styling Advice</div>
+                        <p class="result-text" id="resultTip"></p>
+                    </div>
+
+                    <div style="display:flex;gap:1rem;margin-top:2rem;">
+                        <button class="btn-secondary" onclick="resetUpload()" style="flex:1;">Analyze Another</button>
+                        <button class="btn-primary" id="saveResultBtn" onclick="saveAnalysis()"
+                            style="flex:1;"><span>Save Result</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== HOW IT WORKS =================== -->
+    <section class="how-section section" id="how">
+        <div class="section-header">
+            <div class="section-label">Under the Hood</div>
+            <div class="section-title">HOW IT<br>WORKS</div>
+        </div>
+        <div class="how-grid">
+            <div class="how-card">
+                <div class="how-num">01</div>
+                <div class="how-title">Upload & Detect</div>
+                <p class="how-desc">MediaPipe locates your face in the photo, applies eye-landmark rotation correction,
+                    and crops with smart margins.</p>
+                <div class="how-tech">⬡ MediaPipe · OpenCV</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">02</div>
+                <div class="how-title">Classify Shape</div>
+                <p class="how-desc">A fine-tuned EfficientNetB0 CNN (260×260 px) runs inference across 5 face shape
+                    classes using a softmax layer.</p>
+                <div class="how-tech">⬡ TensorFlow · EfficientNetB0</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">03</div>
+                <div class="how-title">Blend Results</div>
+                <p class="how-desc">Top-2 predicted shapes are blended using confidence-weighted scoring for nuanced,
+                    hybrid recommendations.</p>
+                <div class="how-tech">⬡ Python · Confidence Weighting</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">04</div>
+                <div class="how-title">Pull from DB</div>
+                <p class="how-desc">Recommendations and avoids are fetched from 8-table PostgreSQL schema —
+                    personalised, fast, and fully relational.</p>
+                <div class="how-tech">⬡ PostgreSQL 16 · psycopg2</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== GALLERY =================== -->
+    <section class="gallery-section section" id="gallery">
+        <div class="section-header">
+            <div class="section-label">The Collection</div>
+            <div class="section-title">22 SIGNATURE<br>STYLES</div>
+            <p class="section-sub">Browse every hairstyle in the database. Filter by the face shape it best complements.
+            </p>
+        </div>
+        <div class="gallery-filters" id="galleryFilters">
+            <button class="filter-btn active" onclick="filterGallery('all', this)">All Styles</button>
+            <button class="filter-btn" onclick="filterGallery('oval', this)">Oval</button>
+            <button class="filter-btn" onclick="filterGallery('square', this)">Square</button>
+            <button class="filter-btn" onclick="filterGallery('round', this)">Round</button>
+            <button class="filter-btn" onclick="filterGallery('heart', this)">Heart</button>
+            <button class="filter-btn" onclick="filterGallery('oblong', this)">Oblong</button>
+        </div>
+        <div class="gallery-grid" id="galleryGrid">
+            <!-- Populated by JS (from API or static data) -->
+        </div>
+    </section>
+
+    <!-- =================== HISTORY =================== -->
+    <section class="history-section section" id="history">
+        <div class="section-header">
+            <div class="section-label">Your Account</div>
+            <div class="section-title">ANALYSIS<br>HISTORY</div>
+            <p class="section-sub">Every analysis you run is saved to your profile. Revisit recommendations and track
+                how your understanding of your look evolves.</p>
+        </div>
+        <div id="historyContent">
+            <div class="history-empty" id="historyEmpty">
+                <div class="history-empty-icon">◎</div>
+                <div class="history-empty-text" id="historyEmptyMsg">Log in to view your analysis history</div>
+            </div>
+            <div class="history-grid" id="historyGrid" style="display:none;"></div>
+        </div>
+    </section>
+
+    <!-- =================== FOOTER =================== -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <div class="footer-brand-name">HAIR●GURU</div>
+                <p class="footer-brand-desc">An AI-powered hairstyle recommendation system built with EfficientNetB0
+                    deep learning and a PostgreSQL-backed recommendation engine.</p>
+            </div>
+            <div>
+                <div class="footer-col-title">Navigation</div>
+                <ul class="footer-links">
+                    <li><a href="#shapes">Face Shapes</a></li>
+                    <li><a href="#analyze">Analyze</a></li>
+                    <li><a href="#gallery">Styles</a></li>
+                    <li><a href="#how">How It Works</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-col-title">Account</div>
+                <ul class="footer-links">
+                    <li><a href="#" onclick="openModal('login');return false;">Log In</a></li>
+                    <li><a href="#" onclick="openModal('register');return false;">Sign Up</a></li>
+                    <li><a href="#history">My History</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-col-title">Tech Stack</div>
+                <ul class="footer-links">
+                    <li><a href="#">EfficientNetB0</a></li>
+                    <li><a href="#">PostgreSQL 16</a></li>
+                    <li><a href="#">Python / Flask</a></li>
+                    <li><a href="#">MediaPipe</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-copy">© 2025 HairGuru — 2nd Semester Innovation Project</div>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <span class="tech-badge">TensorFlow</span>
+                <span class="tech-badge">PostgreSQL</span>
+                <span class="tech-badge">MediaPipe</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- =================== AUTH MODALS =================== -->
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('login')">✕</button>
+            <div class="modal-title">WELCOME<br>BACK</div>
+            <div class="modal-sub">Log in to save your analyses</div>
+            <div class="api-error-box" id="loginError"></div>
+            <div class="form-field">
+                <label class="form-label" for="loginUsername">Username</label>
+                <input class="form-input" type="text" id="loginUsername" placeholder="your_username"
+                    autocomplete="username">
+                <div class="form-error" id="loginUsernameErr">Username is required.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="loginPassword">Password</label>
+                <input class="form-input" type="password" id="loginPassword" placeholder="••••••••"
+                    autocomplete="current-password">
+                <div class="form-error" id="loginPasswordErr">Password is required.</div>
+            </div>
+            <button class="form-submit" onclick="handleLogin()">LOG IN</button>
+            <div class="modal-switch">Don't have an account? <a href="#"
+                    onclick="switchModal('login','register');return false;">Sign Up</a></div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('register')">✕</button>
+            <div class="modal-title">CREATE<br>ACCOUNT</div>
+            <div class="modal-sub">Join to save your results</div>
+            <div class="api-error-box" id="registerError"></div>
+            <div class="form-field">
+                <label class="form-label" for="regUsername">Username</label>
+                <input class="form-input" type="text" id="regUsername" placeholder="your_username"
+                    autocomplete="username">
+                <div class="form-error" id="regUsernameErr">Username is required (min 3 chars).</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regEmail">Email</label>
+                <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+                <div class="form-error" id="regEmailErr">Valid email required.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regPassword">Password</label>
+                <input class="form-input" type="password" id="regPassword" placeholder="••••••••"
+                    autocomplete="new-password">
+                <div class="form-error" id="regPasswordErr">Min 8 characters.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regConfirm">Confirm Password</label>
+                <input class="form-input" type="password" id="regConfirm" placeholder="••••••••"
+                    autocomplete="new-password">
+                <div class="form-error" id="regConfirmErr">Passwords do not match.</div>
+            </div>
+            <button class="form-submit" onclick="handleRegister()">CREATE ACCOUNT</button>
+            <div class="modal-switch">Already have an account? <a href="#"
+                    onclick="switchModal('register','login');return false;">Log In</a></div>
+        </div>
+    </div>
+
+    <!-- =================== JAVASCRIPT =================== -->
+    <script>
+        /* ====================================================
+           CONFIG — change API_BASE to your backend URL
+        ==================================================== */
+        const API_BASE = 'http://localhost:5000/api';  // Flask default. Change for production.
+
+        /* ====================================================
+           STATE
+        ==================================================== */
+        let authToken = localStorage.getItem('hg_token') || null;
+        let currentUser = JSON.parse(localStorage.getItem('hg_user') || 'null');
+        let selectedFile = null;
+        let lastResult = null;
+
+        /* ====================================================
+           CURSOR
+        ==================================================== */
+        const cur = document.getElementById('cur');
+        const curR = document.getElementById('cur-ring');
+        document.addEventListener('mousemove', e => {
+            cur.style.left = e.clientX + 'px';
+            cur.style.top = e.clientY + 'px';
+            setTimeout(() => {
+                curR.style.left = e.clientX + 'px';
+                curR.style.top = e.clientY + 'px';
+            }, 80);
+        });
+        document.querySelectorAll('a,button,input,label,.gallery-card,.shape-card').forEach(el => {
+            el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2.5)'; curR.style.transform = 'translate(-50%,-50%) scale(1.4)'; curR.style.opacity = '1'; });
+            el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; curR.style.transform = 'translate(-50%,-50%) scale(1)'; curR.style.opacity = '0.6'; });
+        });
+
+        /* ====================================================
+           NAV
+        ==================================================== */
+        window.addEventListener('scroll', () => {
+            document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 60);
+        });
+        function toggleMobileMenu() {
+            document.getElementById('navLinks').classList.toggle('open');
+        }
+
+        /* ====================================================
+           TOAST
+        ==================================================== */
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.className = `toast ${type} show`;
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        /* ====================================================
+           AUTH STATE
+        ==================================================== */
+        function updateAuthUI() {
+            const loggedIn = !!(authToken && currentUser);
+            document.getElementById('authButtons').style.display = loggedIn ? 'none' : 'flex';
+            document.getElementById('userMenuWrap').style.display = loggedIn ? 'block' : 'none';
+            if (loggedIn && currentUser) {
+                document.getElementById('userNameDisplay').textContent = currentUser.username;
+                document.getElementById('userAvatar').textContent = currentUser.username[0].toUpperCase();
+            }
+        }
+        function toggleUserMenu() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+
+        /* ====================================================
+           MODALS
+        ==================================================== */
+        function openModal(type) {
+            document.getElementById(type + 'Modal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(type) {
+            document.getElementById(type + 'Modal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        function switchModal(from, to) {
+            closeModal(from);
+            setTimeout(() => openModal(to), 200);
+        }
+        // Close on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', e => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        /* ====================================================
+           AUTH: LOGIN
+        ==================================================== */
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            let valid = true;
+
+            document.getElementById('loginUsernameErr').classList.remove('show');
+            document.getElementById('loginPasswordErr').classList.remove('show');
+            document.getElementById('loginError').classList.remove('show');
+
+            if (!username) { document.getElementById('loginUsernameErr').classList.add('show'); valid = false; }
+            if (!password) { document.getElementById('loginPasswordErr').classList.add('show'); valid = false; }
+            if (!valid) return;
+
+            try {
+                /**
+                 * ── BACKEND CONNECTION POINT ──────────────────────────────
+                 * POST /api/auth/login
+                 * Body: { username, password }
+                 * Expected response: { token: "...", user: { id, username, email } }
+                 * ─────────────────────────────────────────────────────────
+                 */
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+                authToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('hg_token', authToken);
+                localStorage.setItem('hg_user', JSON.stringify(currentUser));
+                closeModal('login');
+                updateAuthUI();
+                loadHistory();
+                showToast(`Welcome back, ${currentUser.username}!`, 'success');
+            } catch (err) {
+                const errBox = document.getElementById('loginError');
+                errBox.textContent = err.message;
+                errBox.classList.add('show');
+            }
+        }
+
+        /* ====================================================
+           AUTH: REGISTER
+        ==================================================== */
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirm').value;
+            let valid = true;
+
+            ['regUsernameErr', 'regEmailErr', 'regPasswordErr', 'regConfirmErr'].forEach(id =>
+                document.getElementById(id).classList.remove('show'));
+            document.getElementById('registerError').classList.remove('show');
+
+            if (username.length < 3) { document.getElementById('regUsernameErr').classList.add('show'); valid = false; }
+            if (!email.includes('@')) { document.getElementById('regEmailErr').classList.add('show'); valid = false; }
+            if (password.length < 8) { document.getElementById('regPasswordErr').classList.add('show'); valid = false; }
+            if (password !== confirm) { document.getElementById('regConfirmErr').classList.add('show'); valid = false; }
+            if (!valid) return;
+
+            try {
+                /**
+                 * ── BACKEND CONNECTION POINT ──────────────────────────────
+                 * POST /api/auth/register
+                 * Body: { username, email, password }
+                 * Expected response: { token: "...", user: { id, username, email } }
+                 * ─────────────────────────────────────────────────────────
+                 */
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Registration failed');
+                authToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('hg_token', authToken);
+                localStorage.setItem('hg_user', JSON.stringify(currentUser));
+                closeModal('register');
+                updateAuthUI();
+                showToast(`Account created! Welcome, ${currentUser.username}`, 'success');
+            } catch (err) {
+                const errBox = document.getElementById('registerError');
+                errBox.textContent = err.message;
+                errBox.classList.add('show');
+            }
+        }
+
+        /* ====================================================
+           AUTH: LOGOUT
+        ==================================================== */
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('hg_token');
+            localStorage.removeItem('hg_user');
+            updateAuthUI();
+            document.getElementById('historyGrid').style.display = 'none';
+            document.getElementById('historyEmpty').style.display = 'block';
+            document.getElementById('historyEmptyMsg').textContent = 'Log in to view your analysis history';
+            showToast('Logged out successfully', 'info');
+        }
+
+        /* ====================================================
+           FILE UPLOAD
+        ==================================================== */
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) { showToast('File too large. Max 10MB.', 'error'); return; }
+            selectedFile = file;
+
+            // Preview
+            const reader = new FileReader();
+            reader.onload = evt => {
+                document.getElementById('previewImg').src = evt.target.result;
+                document.getElementById('uploadPreview').style.display = 'block';
+                document.getElementById('selectedFileName').textContent = file.name;
+                document.getElementById('filenameDisplay').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            document.getElementById('analyzeBtn').disabled = false;
+
+            // Reset result panel
+            document.getElementById('resultPanel').classList.remove('show');
+            document.getElementById('idlePlaceholder').style.display = 'block';
+        }
+
+        function resetUpload() {
+            selectedFile = null;
+            lastResult = null;
+            document.getElementById('photoInput').value = '';
+            document.getElementById('uploadPreview').style.display = 'none';
+            document.getElementById('filenameDisplay').style.display = 'none';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('resultPanel').classList.remove('show');
+            document.getElementById('loadingState').classList.remove('show');
+            document.getElementById('idlePlaceholder').style.display = 'block';
+        }
+
+        // Drag & drop
+        const uploadArea = document.getElementById('uploadArea');
+        ['dragenter', 'dragover'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.add('drag-over'); }));
+        ['dragleave', 'drop'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.remove('drag-over'); }));
+        uploadArea.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                document.getElementById('photoInput').files = e.dataTransfer.files;
+                handleFile({ target: { files: [file] } });
+            }
+        });
+
+        /* ====================================================
+           ANALYSIS
+        ==================================================== */
+        async function startAnalysis() {
+            if (!selectedFile) return;
+
+            document.getElementById('idlePlaceholder').style.display = 'none';
+            document.getElementById('resultPanel').classList.remove('show');
+            document.getElementById('loadingState').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            // Animate steps
+            const steps = ['step1', 'step2', 'step3', 'step4', 'step5'];
+            steps.forEach(s => {
+                const el = document.getElementById(s);
+                el.className = 'loader-step';
+            });
+
+            let dotsCount = 0;
+            const dotsInterval = setInterval(() => {
+                document.getElementById('loadDots').textContent = '.'.repeat((dotsCount++ % 3) + 1);
+            }, 400);
+
+            // Simulate realistic step progression
+            const stepTimings = [200, 600, 1100, 1800, 2400];
+            steps.forEach((s, i) => {
+                setTimeout(() => {
+                    if (i > 0) document.getElementById(steps[i - 1]).className = 'loader-step done';
+                    document.getElementById(s).className = 'loader-step active';
+                }, stepTimings[i]);
+            });
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
+                /**
+                 * ── BACKEND CONNECTION POINT ──────────────────────────────
+                 * POST /api/analyze
+                 * Headers: Authorization: Bearer <token>  (optional for logged-in users)
+                 * Body: FormData { image: File }
+                 * Expected response:
+                 * {
+                 *   primary_shape: "Oval",
+                 *   confidence: 0.84,
+                 *   all_confidences: { "Oval": 0.84, "Round": 0.09, "Square": 0.04, "Heart": 0.02, "Oblong": 0.01 },
+                 *   recommended: ["Side part taper", "Crew cut", "Textured quiff", "Slick back"],
+                 *   avoid: ["Buzz cut", "Flat top"],
+                 *   tip: "Your oval face works with almost any style..."
+                 * }
+                 * ─────────────────────────────────────────────────────────
+                 */
+                const headers = {};
+                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+                const res = await fetch(`${API_BASE}/analyze`, { method: 'POST', headers, body: formData });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Analysis failed');
+
+                clearInterval(dotsInterval);
+                setTimeout(() => {
+                    document.getElementById(steps[steps.length - 1]).className = 'loader-step done';
+                    setTimeout(() => {
+                        document.getElementById('loadingState').classList.remove('show');
+                        renderResult(data);
+                    }, 400);
+                }, stepTimings[stepTimings.length - 1] + 200);
+
+                lastResult = data;
+
+            } catch (err) {
+                clearInterval(dotsInterval);
+                // ── DEMO MODE: simulate result when backend not connected ──
+                const demoData = {
+                    primary_shape: 'Oval',
+                    confidence: 0.83,
+                    all_confidences: { Oval: 0.83, Round: 0.09, Square: 0.05, Heart: 0.02, Oblong: 0.01 },
+                    recommended: ['Side Part Taper', 'Textured Quiff', 'Crew Cut / Ivy League', 'Slick Back', 'French Crop'],
+                    avoid: ['Buzz Cut (no guard)', 'Ultra Boxy Flat-Top'],
+                    tip: 'Your oval face shape is the most versatile — almost every haircut works. Focus on styles that celebrate your natural balance. Avoid extremes; your goal is elegance, not compensation.'
+                };
+                clearInterval(dotsInterval);
+                setTimeout(() => {
+                    document.getElementById(steps[steps.length - 1]).className = 'loader-step done';
+                    setTimeout(() => {
+                        document.getElementById('loadingState').classList.remove('show');
+                        renderResult(demoData);
+                        showToast('Demo mode — backend not connected', 'info');
+                    }, 400);
+                }, stepTimings[stepTimings.length - 1] + 200);
+                lastResult = demoData;
+                console.warn('Backend not reachable, using demo data:', err.message);
+            }
+        }
+
+        function renderResult(data) {
+            document.getElementById('resultShape').textContent = data.primary_shape.toUpperCase();
+            document.getElementById('resultConf').textContent = `Primary Shape · ${Math.round(data.confidence * 100)}% confidence`;
+
+            // Confidence bars
+            const barsHtml = Object.entries(data.all_confidences)
+                .sort((a, b) => b[1] - a[1])
+                .map(([shape, pct]) => `
+      <div class="conf-row">
+        <span class="conf-label">${shape}</span>
+        <div class="conf-bar-bg"><div class="conf-bar" style="width:${Math.round(pct * 100)}%"></div></div>
+        <span class="conf-pct">${Math.round(pct * 100)}%</span>
+      </div>`).join('');
+            document.getElementById('confBars').innerHTML = barsHtml;
+
+            // Cuts
+            document.getElementById('resultCuts').innerHTML = data.recommended
+                .map(c => `<span class="cut-chip">${c}</span>`).join('');
+
+            // Avoid
+            document.getElementById('resultAvoid').innerHTML = data.avoid
+                .map(c => `<span class="cut-chip">${c}</span>`).join('');
+
+            // Tip
+            document.getElementById('resultTip').textContent = data.tip;
+
+            document.getElementById('resultPanel').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = false;
+            document.getElementById('analyzeBtn').textContent = 'Analyze Again';
+        }
+
+        /* ====================================================
+           SAVE ANALYSIS
+        ==================================================== */
+        async function saveAnalysis() {
+            if (!authToken) { openModal('login'); return; }
+            if (!lastResult) return;
+            try {
+                /**
+                 * ── BACKEND CONNECTION POINT ──────────────────────────────
+                 * POST /api/analyses
+                 * Headers: Authorization: Bearer <token>
+                 * Body: JSON { result: lastResult, image_filename: selectedFile?.name }
+                 * Expected response: { id: "...", saved: true }
+                 * ─────────────────────────────────────────────────────────
+                 */
+                const res = await fetch(`${API_BASE}/analyses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ result: lastResult, image_filename: selectedFile?.name })
+                });
+                if (!res.ok) throw new Error('Failed to save');
+                showToast('Analysis saved to your profile!', 'success');
+                loadHistory();
+            } catch (err) {
+                showToast('Save failed. Try again.', 'error');
+            }
+        }
+
+        /* ====================================================
+           LOAD HISTORY
+        ==================================================== */
+        async function loadHistory() {
+            if (!authToken) return;
+            try {
+                /**
+                 * ── BACKEND CONNECTION POINT ──────────────────────────────
+                 * GET /api/analyses
+                 * Headers: Authorization: Bearer <token>
+                 * Expected response: Array of analysis objects
+                 * ─────────────────────────────────────────────────────────
+                 */
+                const res = await fetch(`${API_BASE}/analyses`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.length) {
+                    document.getElementById('historyEmpty').style.display = 'block';
+                    document.getElementById('historyGrid').style.display = 'none';
+                    document.getElementById('historyEmptyMsg').textContent = 'No analyses yet — analyze your face to get started';
+                    return;
+                }
+                renderHistory(data);
+            } catch {
+                // Silently fail if backend not available
+            }
+        }
+
+        function renderHistory(analyses) {
+            document.getElementById('historyEmpty').style.display = 'none';
+            const grid = document.getElementById('historyGrid');
+            grid.style.display = 'grid';
+            grid.innerHTML = analyses.map(a => `
+    <div class="history-card">
+      <div class="history-card-date">${new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+      <div class="history-card-shape">${(a.primary_shape || '').toUpperCase()}</div>
+      <div class="history-card-cuts">${(a.recommended || []).slice(0, 3).join(' · ')}</div>
+    </div>
+  `).join('');
+        }
+
+        /* ====================================================
+           GALLERY
+        ==================================================== */
+        // Static gallery data (replace with API call to GET /api/hairstyles)
+        const galleryStyles = [
+            { name: 'Side Part Taper', shapes: ['oval', 'square', 'oblong'], img: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=400&q=70' },
+            { name: 'Crew Cut / Ivy League', shapes: ['all'], img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=70' },
+            { name: 'Textured Quiff', shapes: ['oval', 'round', 'heart'], img: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=70' },
+            { name: 'Slick Back', shapes: ['oval', 'square'], img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=70' },
+            { name: 'French Crop', shapes: ['round', 'heart'], img: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=70' },
+            { name: 'Undercut', shapes: ['oval', 'oblong', 'square'], img: 'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&q=70' },
+            { name: 'Caesar Cut', shapes: ['round', 'heart'], img: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=70' },
+            { name: 'Buzz Cut', shapes: ['oval', 'square'], img: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?w=400&q=70' },
+        ];
+
+        function renderGallery(filter = 'all') {
+            const grid = document.getElementById('galleryGrid');
+
+            /**
+             * ── BACKEND CONNECTION POINT ──────────────────────────────
+             * GET /api/hairstyles?shape=oval  (or no param for all)
+             * Expected response: Array of { name, image_url, suitable_shapes[] }
+             * ─────────────────────────────────────────────────────────
+             * For now, using static data. Replace the galleryStyles array
+             * with a fetch() call and call renderGallery from the response.
+             */
+
+            const filtered = filter === 'all'
+                ? galleryStyles
+                : galleryStyles.filter(s => s.shapes.includes(filter) || s.shapes.includes('all'));
+
+            grid.innerHTML = filtered.map(s => `
+    <div class="gallery-card" data-shapes="${s.shapes.join(',')}">
+      <img src="${s.img}" alt="${s.name}" loading="lazy">
+      <div class="gallery-overlay">
+        <div class="gallery-style-name">${s.name}</div>
+        <div class="gallery-shape-tag">${filter === 'all' ? s.shapes.join(' · ') : filter} face</div>
+      </div>
+    </div>
+  `).join('');
+        }
+
+        function filterGallery(type, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderGallery(type);
+        }
+
+        /* ====================================================
+           INIT
+        ==================================================== */
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+            renderGallery();
+            if (authToken && currentUser) loadHistory();
+
+            /**
+             * ── BACKEND CONNECTION POINT ──────────────────────────────
+             * Optionally load live gallery from API:
+             * fetch(`${API_BASE}/hairstyles`, { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} })
+             *   .then(r => r.json())
+             *   .then(data => { galleryStyles = data; renderGallery(); })
+             *   .catch(() => renderGallery()); // fallback to static
+             * ─────────────────────────────────────────────────────────
+             */
+        });
+
+        // Keyboard: close modals on Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                ['login', 'register'].forEach(closeModal);
+                document.body.style.overflow = '';
+            }
+            if (e.key === 'Enter') {
+                if (document.getElementById('loginModal').classList.contains('show')) handleLogin();
+                if (document.getElementById('registerModal').classList.contains('show')) handleRegister();
+            }
+        });
+    </script>
+</body>
+
+</html>
