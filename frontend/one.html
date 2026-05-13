@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HairGuru — AI Face Shape Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="oo.css">
+</head>
+
+<body>
+
+    <!-- CURSOR -->
+    <div id="cur"></div>
+    <div id="cur-ring"></div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+        <span id="toastMsg">Message here</span>
+    </div>
+
+    <!-- =================== NAV =================== -->
+    <nav class="nav" id="mainNav">
+        <div class="nav-logo">
+            HAIR<span class="dot">●</span>GURU
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a href="#shapes">Face Shapes</a>
+            <a href="#analyze">Analyze</a>
+            <a href="#gallery">Styles</a>
+            <a href="#how">How It Works</a>
+            <!-- Auth buttons (shown when logged out) -->
+            <div id="authButtons" style="display:flex;gap:0.75rem;align-items:center;">
+                <a href="#" onclick="openModal('login'); return false;" style="color:var(--muted);">Log In</a>
+                <a href="#" onclick="openModal('register'); return false;" class="nav-cta">Sign Up</a>
+            </div>
+            <!-- User menu (shown when logged in) -->
+            <div id="userMenuWrap" style="display:none;" class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <div class="user-avatar" id="userAvatar">?</div>
+                    <span id="userNameDisplay">User</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="#history">My History</a>
+                    <a href="#favorites">Saved Styles</a>
+                    <button onclick="logout()">Log Out</button>
+                </div>
+            </div>
+        </div>
+        <button class="nav-ham" id="navHam" onclick="toggleMobileMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- =================== HERO =================== -->
+    <section class="hero" id="hero">
+        <div class="hero-left">
+            <div class="hero-eyebrow">AI-Powered Grooming</div>
+            <h1 class="hero-h1">
+                KNOW YOUR<br>
+                <span class="line2">FACE.</span><br>
+                OWN YOUR<br>
+                LOOK.
+            </h1>
+            <p class="hero-sub">Upload your photo. Our EfficientNet AI maps your bone structure and recommends the exact
+                haircuts built for your face shape — with the ones to avoid.</p>
+            <div class="hero-actions">
+                <a href="#analyze" class="btn-primary"><span>Analyze My Face</span> <span>→</span></a>
+                <a href="#how" class="btn-secondary">See How It Works</a>
+            </div>
+            <div class="hero-stats">
+                <div>
+                    <div class="stat-num">5</div>
+                    <div class="stat-label">Face Shapes</div>
+                </div>
+                <div>
+                    <div class="stat-num">22</div>
+                    <div class="stat-label">Hairstyles</div>
+                </div>
+                <div>
+                    <div class="stat-num">56%</div>
+                    <div class="stat-label">Model Accuracy</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-right">
+            <div class="hero-right-bg"></div>
+            <div class="hero-face-grid">
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <ellipse cx="50" cy="60" rx="38" ry="52" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Oval</div>
+                </div>
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="12" y="12" width="76" height="76" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Square</div>
+                </div>
+                <div class="face-cell">
+                    <div class="face-cell-shape">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="40" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div class="face-cell-label">Round</div>
+                </div>
+                <div class="face-cell" style="background:var(--rust);">
+                    <div style="position:relative;z-index:10;text-align:center;">
+                        <span class="hero-badge-num">AI</span>
+                        <span class="hero-badge-label">Face Mapping</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee-strip">
+        <div class="marquee-inner" id="marqueeInner">
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oval Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Square Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Round Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Heart Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oblong Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> EfficientNetB0</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> AI Recommendations</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> 22 Hairstyles</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> PostgreSQL Powered</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oval Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Square Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Round Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Heart Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> Oblong Face</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> EfficientNetB0</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> AI Recommendations</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> 22 Hairstyles</div>
+            <div class="marquee-item"><span class="marquee-dot">◆</span> PostgreSQL Powered</div>
+        </div>
+    </div>
+
+    <!-- =================== FACE SHAPES =================== -->
+    <section class="shapes-section section" id="shapes">
+        <div class="section-header">
+            <div class="section-label">AI Classification</div>
+            <div class="section-title">5 FACE SHAPES</div>
+            <p class="section-sub">Our EfficientNet model classifies your facial geometry into one of five categories —
+                each with its own curated set of recommended and avoided styles.</p>
+        </div>
+        <div class="shapes-grid" id="shapesGrid">
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 100" fill="none">
+                        <path d="M40 8 C20 8 8 28 8 52 C8 70 18 85 40 92 C62 85 72 70 72 52 C72 28 60 8 40 8Z"
+                            stroke="#c4503a" stroke-width="2" fill="none" />
+                    </svg>
+                </div>
+                <div class="shape-name">HEART</div>
+                <p class="shape-desc">Wider forehead and cheekbones tapering to a pointed chin.</p>
+                <div class="shape-tip">Soften wide forehead; keep top balanced</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 60 100" fill="none">
+                        <rect x="4" y="8" width="52" height="84" rx="4" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">OBLONG</div>
+                <p class="shape-desc">Longer than wide with fairly uniform width from forehead to jaw.</p>
+                <div class="shape-tip">Reduce face length; avoid excess height</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 96" fill="none">
+                        <ellipse cx="40" cy="48" rx="34" ry="42" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">OVAL</div>
+                <p class="shape-desc">Balanced proportions with slightly wider cheekbones — the "ideal" shape.</p>
+                <div class="shape-tip">Most styles work — avoid extremes</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 80" fill="none">
+                        <circle cx="40" cy="40" r="34" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">ROUND</div>
+                <p class="shape-desc">Similar width and length with soft, curved features.</p>
+                <div class="shape-tip">Add height and angles to reduce roundness</div>
+            </div>
+            <div class="shape-card">
+                <div class="shape-svg-wrap">
+                    <svg viewBox="0 0 80 80" fill="none">
+                        <rect x="8" y="8" width="64" height="64" stroke="#c4503a" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="shape-name">SQUARE</div>
+                <p class="shape-desc">Strong angular jawline with forehead approximately equal to jaw width.</p>
+                <div class="shape-tip">Texture and clean structure work best</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== ANALYZE =================== -->
+    <section class="analyze-section section" id="analyze">
+        <div class="section-header">
+            <div class="section-label">EfficientNetB0 + PostgreSQL</div>
+            <div class="section-title">ANALYZE YOUR<br>FACE SHAPE</div>
+            <p class="section-sub">Upload a front-facing, well-lit photo. Our AI detects, aligns, and classifies your
+                face — then pulls personalised recommendations from the database.</p>
+        </div>
+        <div class="analyze-grid">
+            <!-- LEFT: Upload -->
+            <div>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp"
+                        onchange="handleFile(event)">
+                    <div class="upload-icon-wrap">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                        </svg>
+                    </div>
+                    <div class="upload-title">DROP PHOTO HERE</div>
+                    <p class="upload-sub">or click to browse files</p>
+                    <div class="upload-constraints">
+                        <span class="constraint-tag">Front-facing</span>
+                        <span class="constraint-tag">Good lighting</span>
+                        <span class="constraint-tag">JPG / PNG / WEBP</span>
+                        <span class="constraint-tag">Max 10MB</span>
+                    </div>
+                </div>
+                <div id="filenameDisplay" class="upload-constraints" style="margin-top:0.75rem;display:none;">
+                    <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--sage);"
+                        id="selectedFileName"></span>
+                </div>
+                <div class="upload-preview" id="uploadPreview">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button class="remove-btn" onclick="resetUpload()">✕ Remove</button>
+                </div>
+                <div class="analyze-btn-wrap">
+                    <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()" disabled>
+                        <span>ANALYZE FACE SHAPE</span>
+                    </button>
+                </div>
+                <p
+                    style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.12em;color:var(--muted);margin-top:1rem;text-align:center;">
+                    Your photo is processed securely and never stored without consent.
+                </p>
+            </div>
+
+            <!-- RIGHT: Result / Loading -->
+            <div>
+                <!-- Idle placeholder -->
+                <div id="idlePlaceholder" style="border:1px dashed var(--border);padding:5rem 2rem;text-align:center;">
+                    <div style="font-size:4rem;opacity:0.15;margin-bottom:1rem;">◉</div>
+                    <p
+                        style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">
+                        Results will appear here</p>
+                    <p style="font-family:var(--font-mono);font-size:0.58rem;color:var(--border);margin-top:0.5rem;">
+                        Upload a photo to begin</p>
+                </div>
+
+                <!-- Loading -->
+                <div class="loading-state" id="loadingState">
+                    <div class="loader-ring"></div>
+                    <div class="loader-text">Processing<span id="loadDots"></span></div>
+                    <div class="loader-steps" id="loaderSteps">
+                        <div class="loader-step done" id="step1">
+                            <div class="step-dot"></div><span>Image received</span>
+                        </div>
+                        <div class="loader-step active" id="step2">
+                            <div class="step-dot"></div><span>Face detection (MediaPipe)</span>
+                        </div>
+                        <div class="loader-step" id="step3">
+                            <div class="step-dot"></div><span>Alignment & preprocessing</span>
+                        </div>
+                        <div class="loader-step" id="step4">
+                            <div class="step-dot"></div><span>EfficientNet classification</span>
+                        </div>
+                        <div class="loader-step" id="step5">
+                            <div class="step-dot"></div><span>Loading DB recommendations</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="result-panel" id="resultPanel">
+                    <div class="result-header">
+                        <div>
+                            <div class="result-face-shape" id="resultShape">OVAL</div>
+                            <div class="result-confidence" id="resultConf">Primary Shape · 84% confidence</div>
+                        </div>
+                        <div class="result-badge" id="resultBadge">Detected</div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Confidence Breakdown</div>
+                        <div class="confidence-bar-wrap" id="confBars"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Recommended Hairstyles</div>
+                        <div class="cut-chips" id="resultCuts"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Styles to Avoid</div>
+                        <div class="cut-chips avoid-chips" id="resultAvoid"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Styling Advice</div>
+                        <p class="result-text" id="resultTip"></p>
+                    </div>
+
+                    <div style="display:flex;gap:1rem;margin-top:2rem;">
+                        <button class="btn-secondary" onclick="resetUpload()" style="flex:1;">Analyze Another</button>
+                        <button class="btn-primary" id="saveResultBtn" onclick="saveAnalysis()"
+                            style="flex:1;"><span>Save Result</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== HOW IT WORKS =================== -->
+    <section class="how-section section" id="how">
+        <div class="section-header">
+            <div class="section-label">Under the Hood</div>
+            <div class="section-title">HOW IT<br>WORKS</div>
+        </div>
+        <div class="how-grid">
+            <div class="how-card">
+                <div class="how-num">01</div>
+                <div class="how-title">Upload & Detect</div>
+                <p class="how-desc">MediaPipe locates your face in the photo, applies eye-landmark rotation correction,
+                    and crops with smart margins.</p>
+                <div class="how-tech">⬡ MediaPipe · OpenCV</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">02</div>
+                <div class="how-title">Classify Shape</div>
+                <p class="how-desc">A fine-tuned EfficientNetB0 CNN (260×260 px) runs inference across 5 face shape
+                    classes using a softmax layer.</p>
+                <div class="how-tech">⬡ TensorFlow · EfficientNetB0</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">03</div>
+                <div class="how-title">Blend Results</div>
+                <p class="how-desc">Top-2 predicted shapes are blended using confidence-weighted scoring for nuanced,
+                    hybrid recommendations.</p>
+                <div class="how-tech">⬡ Python · Confidence Weighting</div>
+            </div>
+            <div class="how-card">
+                <div class="how-num">04</div>
+                <div class="how-title">Pull from DB</div>
+                <p class="how-desc">Recommendations and avoids are fetched from 8-table PostgreSQL schema —
+                    personalised, fast, and fully relational.</p>
+                <div class="how-tech">⬡ PostgreSQL 16 · psycopg2</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== GALLERY =================== -->
+    <section class="gallery-section section" id="gallery">
+        <div class="section-header">
+            <div class="section-label">The Collection</div>
+            <div class="section-title">22 SIGNATURE<br>STYLES</div>
+            <p class="section-sub">Browse every hairstyle in the database. Filter by the face shape it best complements.
+            </p>
+        </div>
+        <div class="gallery-filters" id="galleryFilters">
+            <button class="filter-btn active" onclick="filterGallery('all', this)">All Styles</button>
+            <button class="filter-btn" onclick="filterGallery('oval', this)">Oval</button>
+            <button class="filter-btn" onclick="filterGallery('square', this)">Square</button>
+            <button class="filter-btn" onclick="filterGallery('round', this)">Round</button>
+            <button class="filter-btn" onclick="filterGallery('heart', this)">Heart</button>
+            <button class="filter-btn" onclick="filterGallery('oblong', this)">Oblong</button>
+        </div>
+        <div class="gallery-grid" id="galleryGrid">
+            <!-- Populated by JS -->
+        </div>
+    </section>
+
+    <!-- =================== HISTORY =================== -->
+    <section class="history-section section" id="history">
+        <div class="section-header">
+            <div class="section-label">Your Account</div>
+            <div class="section-title">ANALYSIS<br>HISTORY</div>
+            <p class="section-sub">Every analysis you run is saved to your profile. Revisit recommendations and track
+                how your understanding of your look evolves.</p>
+        </div>
+        <div id="historyContent">
+            <div class="history-empty" id="historyEmpty">
+                <div class="history-empty-icon">◎</div>
+                <div class="history-empty-text" id="historyEmptyMsg">Log in to view your analysis history</div>
+            </div>
+            <div class="history-grid" id="historyGrid" style="display:none;"></div>
+        </div>
+    </section>
+
+    <!-- =================== FOOTER =================== -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <div class="footer-brand-name">HAIR●GURU</div>
+                <p class="footer-brand-desc">An AI-powered hairstyle recommendation system built with EfficientNetB0
+                    deep learning and a PostgreSQL-backed recommendation engine.</p>
+            </div>
+            <div>
+                <div class="footer-col-title">Navigation</div>
+                <ul class="footer-links">
+                    <li><a href="#shapes">Face Shapes</a></li>
+                    <li><a href="#analyze">Analyze</a></li>
+                    <li><a href="#gallery">Styles</a></li>
+                    <li><a href="#how">How It Works</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-col-title">Account</div>
+                <ul class="footer-links">
+                    <li><a href="#" onclick="openModal('login');return false;">Log In</a></li>
+                    <li><a href="#" onclick="openModal('register');return false;">Sign Up</a></li>
+                    <li><a href="#history">My History</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-col-title">Tech Stack</div>
+                <ul class="footer-links">
+                    <li><a href="#">EfficientNetB0</a></li>
+                    <li><a href="#">PostgreSQL 16</a></li>
+                    <li><a href="#">Python / Flask</a></li>
+                    <li><a href="#">MediaPipe</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-copy">© 2025 HairGuru — 2nd Semester Innovation Project</div>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <span class="tech-badge">TensorFlow</span>
+                <span class="tech-badge">PostgreSQL</span>
+                <span class="tech-badge">MediaPipe</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- =================== AUTH MODALS =================== -->
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('login')">✕</button>
+            <div class="modal-title">WELCOME<br>BACK</div>
+            <div class="modal-sub">Log in to save your analyses</div>
+            <div class="api-error-box" id="loginError"></div>
+            <div class="form-field">
+                <label class="form-label" for="loginUsername">Username</label>
+                <input class="form-input" type="text" id="loginUsername" placeholder="your_username"
+                    autocomplete="username">
+                <div class="form-error" id="loginUsernameErr">Username is required.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="loginPassword">Password</label>
+                <input class="form-input" type="password" id="loginPassword" placeholder="••••••••"
+                    autocomplete="current-password">
+                <div class="form-error" id="loginPasswordErr">Password is required.</div>
+            </div>
+            <button class="form-submit" onclick="handleLogin()">LOG IN</button>
+            <div class="modal-switch">Don't have an account? <a href="#"
+                    onclick="switchModal('login','register');return false;">Sign Up</a></div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('register')">✕</button>
+            <div class="modal-title">CREATE<br>ACCOUNT</div>
+            <div class="modal-sub">Join to save your results</div>
+            <div class="api-error-box" id="registerError"></div>
+            <div class="form-field">
+                <label class="form-label" for="regUsername">Username</label>
+                <input class="form-input" type="text" id="regUsername" placeholder="your_username"
+                    autocomplete="username">
+                <div class="form-error" id="regUsernameErr">Username is required (min 3 chars).</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regEmail">Email</label>
+                <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+                <div class="form-error" id="regEmailErr">Valid email required.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regPassword">Password</label>
+                <input class="form-input" type="password" id="regPassword" placeholder="••••••••"
+                    autocomplete="new-password">
+                <div class="form-error" id="regPasswordErr">Min 8 characters.</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="regConfirm">Confirm Password</label>
+                <input class="form-input" type="password" id="regConfirm" placeholder="••••••••"
+                    autocomplete="new-password">
+                <div class="form-error" id="regConfirmErr">Passwords do not match.</div>
+            </div>
+            <button class="form-submit" onclick="handleRegister()">CREATE ACCOUNT</button>
+            <div class="modal-switch">Already have an account? <a href="#"
+                    onclick="switchModal('register','login');return false;">Log In</a></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
