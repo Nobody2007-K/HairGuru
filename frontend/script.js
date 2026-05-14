@@ -1,15 +1,45 @@
 /* ====================================================
-   CONFIG — change API_BASE to your backend URL
+   CONFIG — Django REST API on port 8000
 ==================================================== */
-const API_BASE = 'http://localhost:5000/api';  // Flask default. Change for production.
+const API_BASE = 'http://localhost:8000/api';
 
 /* ====================================================
    STATE
 ==================================================== */
-let authToken = localStorage.getItem('hg_token') || null;
 let currentUser = JSON.parse(localStorage.getItem('hg_user') || 'null');
+let isLoggedIn = localStorage.getItem('hg_logged_in') === 'true';
 let selectedFile = null;
 let lastResult = null;
+
+/* ====================================================
+   HELPERS — fetch with credentials (session cookies)
+==================================================== */
+function apiFetch(path, options = {}) {
+    const url = `${API_BASE}${path}`;
+    const defaults = {
+        credentials: 'include',  // send session cookies
+        headers: {},
+    };
+    // Merge headers
+    const merged = { ...defaults, ...options };
+    merged.headers = { ...defaults.headers, ...options.headers };
+
+    // Get CSRF token from cookie for non-GET requests
+    if (merged.method && merged.method !== 'GET') {
+        const csrfToken = getCookie('csrftoken');
+        if (csrfToken) {
+            merged.headers['X-CSRFToken'] = csrfToken;
+        }
+    }
+    return fetch(url, merged);
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
 
 /* ====================================================
    CURSOR
@@ -84,7 +114,7 @@ function showToast(msg, type = 'info') {
    AUTH STATE
 ==================================================== */
 function updateAuthUI() {
-    const loggedIn = !!(authToken && currentUser);
+    const loggedIn = !!(isLoggedIn && currentUser);
     document.getElementById('authButtons').style.display = loggedIn ? 'none' : 'flex';
     document.getElementById('userMenuWrap').style.display = loggedIn ? 'block' : 'none';
     if (loggedIn && currentUser) {
@@ -127,7 +157,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 /* ====================================================
-   AUTH: LOGIN
+   AUTH: LOGIN — Django session-based auth
 ==================================================== */
 async function handleLogin() {
     const username = document.getElementById('loginUsername').value.trim();
@@ -143,16 +173,17 @@ async function handleLogin() {
     if (!valid) return;
 
     try {
-        const res = await fetch(`${API_BASE}/auth/login`, {
+        const res = await apiFetch('/auth/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Login failed');
-        authToken = data.token;
+        if (!res.ok) throw new Error(data.error || data.message || 'Login failed');
+
         currentUser = data.user;
-        localStorage.setItem('hg_token', authToken);
+        isLoggedIn = true;
+        localStorage.setItem('hg_logged_in', 'true');
         localStorage.setItem('hg_user', JSON.stringify(currentUser));
         closeModal('login');
         updateAuthUI();
@@ -166,7 +197,7 @@ async function handleLogin() {
 }
 
 /* ====================================================
-   AUTH: REGISTER
+   AUTH: REGISTER — Django session-based auth
 ==================================================== */
 async function handleRegister() {
     const username = document.getElementById('regUsername').value.trim();
@@ -186,16 +217,24 @@ async function handleRegister() {
     if (!valid) return;
 
     try {
-        const res = await fetch(`${API_BASE}/auth/register`, {
+        const res = await apiFetch('/auth/register/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
+            body: JSON.stringify({ username, email, password, password_confirm: confirm })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Registration failed');
-        authToken = data.token;
+        if (!res.ok) {
+            // Django REST returns errors as object { field: [errors] }
+            const errMsg = typeof data === 'object'
+                ? Object.values(data).flat().join('. ')
+                : data.message || 'Registration failed';
+            throw new Error(errMsg);
+        }
+
+        // Auto-login after registration
         currentUser = data.user;
-        localStorage.setItem('hg_token', authToken);
+        isLoggedIn = true;
+        localStorage.setItem('hg_logged_in', 'true');
         localStorage.setItem('hg_user', JSON.stringify(currentUser));
         closeModal('register');
         updateAuthUI();
@@ -210,10 +249,13 @@ async function handleRegister() {
 /* ====================================================
    AUTH: LOGOUT
 ==================================================== */
-function logout() {
-    authToken = null;
+async function logout() {
+    try {
+        await apiFetch('/auth/logout/', { method: 'POST' });
+    } catch { /* ignore if backend unreachable */ }
     currentUser = null;
-    localStorage.removeItem('hg_token');
+    isLoggedIn = false;
+    localStorage.removeItem('hg_logged_in');
     localStorage.removeItem('hg_user');
     updateAuthUI();
     document.getElementById('historyGrid').style.display = 'none';
@@ -274,7 +316,7 @@ uploadArea.addEventListener('drop', e => {
 });
 
 /* ====================================================
-   ANALYSIS
+   ANALYSIS — connects to Django /api/analyze/ endpoint
 ==================================================== */
 async function startAnalysis() {
     if (!selectedFile) return;
@@ -309,23 +351,38 @@ async function startAnalysis() {
         const formData = new FormData();
         formData.append('image', selectedFile);
 
-        const headers = {};
-        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-        const res = await fetch(`${API_BASE}/analyze`, { method: 'POST', headers, body: formData });
+        const res = await apiFetch('/analyze/', {
+            method: 'POST',
+            body: formData
+            // Don't set Content-Type for FormData — browser sets it with boundary
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Analysis failed');
+        if (!res.ok) throw new Error(data.error || data.message || 'Analysis failed');
 
         clearInterval(dotsInterval);
+
+        // Transform Django response to frontend format
+        const result = {
+            analysis_id: data.analysis_id,
+            primary_shape: data.primary_shape,
+            confidence: data.primary_probability,
+            all_confidences: data.probabilities,
+            recommended: data.recommended_hairstyles.map(h => h.name || h),
+            avoid: data.avoid_hairstyles.map(h => h.name || h),
+            tip: data.primary_shape
+                ? getFaceShapeTip(data.primary_shape)
+                : 'Upload a clear, front-facing photo for the best results.'
+        };
+
         setTimeout(() => {
             document.getElementById(steps[steps.length - 1]).className = 'loader-step done';
             setTimeout(() => {
                 document.getElementById('loadingState').classList.remove('show');
-                renderResult(data);
+                renderResult(result);
             }, 400);
         }, stepTimings[stepTimings.length - 1] + 200);
 
-        lastResult = data;
+        lastResult = result;
 
     } catch (err) {
         clearInterval(dotsInterval);
@@ -338,18 +395,29 @@ async function startAnalysis() {
             avoid: ['Buzz Cut (no guard)', 'Ultra Boxy Flat-Top'],
             tip: 'Your oval face shape is the most versatile — almost every haircut works. Focus on styles that celebrate your natural balance. Avoid extremes; your goal is elegance, not compensation.'
         };
-        clearInterval(dotsInterval);
         setTimeout(() => {
             document.getElementById(steps[steps.length - 1]).className = 'loader-step done';
             setTimeout(() => {
                 document.getElementById('loadingState').classList.remove('show');
                 renderResult(demoData);
-                showToast('Demo mode — backend not connected', 'info');
+                showToast('Demo mode — backend not connected or login required', 'info');
             }, 400);
         }, stepTimings[stepTimings.length - 1] + 200);
         lastResult = demoData;
-        console.warn('Backend not reachable, using demo data:', err.message);
+        console.warn('Backend error, using demo data:', err.message);
     }
+}
+
+/* Face shape tips lookup */
+function getFaceShapeTip(shape) {
+    const tips = {
+        'Oval': 'Your oval face shape is the most versatile — almost every haircut works. Focus on styles that celebrate your natural balance.',
+        'Round': 'Add height and angles to visually elongate your face. Side parts, textured tops, and fades work great.',
+        'Square': 'Your strong jawline is an asset. Textured styles and clean structures complement your angular features.',
+        'Heart': 'Balance your wider forehead with volume at the sides. Side-swept styles and layered cuts work well.',
+        'Oblong': 'Add width to counterbalance length. Avoid excessive height on top — go for side volume and bangs.'
+    };
+    return tips[shape] || 'Upload a clear, front-facing photo for the best results.';
 }
 
 function renderResult(data) {
@@ -384,42 +452,37 @@ function renderResult(data) {
 }
 
 /* ====================================================
-   SAVE ANALYSIS
+   SAVE ANALYSIS (already saved on backend via /analyze/)
 ==================================================== */
 async function saveAnalysis() {
-    if (!authToken) { openModal('login'); return; }
+    if (!isLoggedIn) { openModal('login'); return; }
     if (!lastResult) return;
-    try {
-        const res = await fetch(`${API_BASE}/analyses`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ result: lastResult, image_filename: selectedFile?.name })
-        });
-        if (!res.ok) throw new Error('Failed to save');
-        showToast('Analysis saved to your profile!', 'success');
-        loadHistory();
-    } catch (err) {
-        showToast('Save failed. Try again.', 'error');
-    }
+    // The analysis is already saved on the backend when /api/analyze/ is called
+    showToast('Analysis saved to your profile!', 'success');
+    loadHistory();
 }
 
 /* ====================================================
-   LOAD HISTORY
+   LOAD HISTORY — Django /api/analyses/
 ==================================================== */
 async function loadHistory() {
-    if (!authToken) return;
+    if (!isLoggedIn) return;
     try {
-        const res = await fetch(`${API_BASE}/analyses`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
+        const res = await apiFetch('/analyses/');
         const data = await res.json();
-        if (!res.ok || !data.length) {
+        if (!res.ok) {
+            throw new Error('Failed to load history');
+        }
+
+        // Django REST uses pagination: { count, next, previous, results }
+        const analyses = data.results || data;
+        if (!analyses || !analyses.length) {
             document.getElementById('historyEmpty').style.display = 'block';
             document.getElementById('historyGrid').style.display = 'none';
             document.getElementById('historyEmptyMsg').textContent = 'No analyses yet — analyze your face to get started';
             return;
         }
-        renderHistory(data);
+        renderHistory(analyses);
     } catch {
         // Silently fail if backend not available
     }
@@ -431,17 +494,17 @@ function renderHistory(analyses) {
     grid.style.display = 'grid';
     grid.innerHTML = analyses.map(a => `
     <div class="history-card">
-      <div class="history-card-date">${new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-      <div class="history-card-shape">${(a.primary_shape || '').toUpperCase()}</div>
-      <div class="history-card-cuts">${(a.recommended || []).slice(0, 3).join(' · ')}</div>
+      <div class="history-card-date">${new Date(a.analyzed_at || a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+      <div class="history-card-shape">${(a.primary_shape_name || a.primary_shape || '').toUpperCase()}</div>
+      <div class="history-card-cuts">Heart: ${Math.round((a.prob_heart || 0) * 100)}% · Oval: ${Math.round((a.prob_oval || 0) * 100)}% · Round: ${Math.round((a.prob_round || 0) * 100)}%</div>
     </div>
   `).join('');
 }
 
 /* ====================================================
-   GALLERY
+   GALLERY — loads from backend /api/hairstyles/
 ==================================================== */
-const galleryStyles = [
+let galleryStyles = [
     { name: 'Side Part Taper', shapes: ['oval', 'square', 'oblong'], img: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=400&q=70' },
     { name: 'Crew Cut / Ivy League', shapes: ['all'], img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=70' },
     { name: 'Textured Quiff', shapes: ['oval', 'round', 'heart'], img: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=70' },
@@ -451,6 +514,29 @@ const galleryStyles = [
     { name: 'Caesar Cut', shapes: ['round', 'heart'], img: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=70' },
     { name: 'Buzz Cut', shapes: ['oval', 'square'], img: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?w=400&q=70' },
 ];
+
+// Try to load gallery from backend
+async function loadGalleryFromBackend() {
+    try {
+        const res = await apiFetch('/hairstyles/');
+        const data = await res.json();
+        if (res.ok) {
+            const styles = data.results || data;
+            if (styles && styles.length > 0) {
+                galleryStyles = styles.map(s => ({
+                    name: s.name,
+                    shapes: s.recommended_for_shapes
+                        ? s.recommended_for_shapes.map(r => r.face_shape.toLowerCase())
+                        : ['all'],
+                    img: s.image_url || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=70'
+                }));
+                renderGallery();
+            }
+        }
+    } catch {
+        // Use default gallery data
+    }
+}
 
 function renderGallery(filter = 'all') {
     const grid = document.getElementById('galleryGrid');
@@ -476,12 +562,50 @@ function filterGallery(type, btn) {
 }
 
 /* ====================================================
+   LOAD FACE SHAPES FROM BACKEND
+==================================================== */
+async function loadFaceShapes() {
+    try {
+        const res = await apiFetch('/face-shapes/');
+        const data = await res.json();
+        if (res.ok) {
+            const shapes = data.results || data;
+            if (shapes && shapes.length > 0) {
+                // Update shape cards with backend data (descriptions, tips)
+                const grid = document.getElementById('shapesGrid');
+                if (grid && grid.children.length > 0) {
+                    shapes.forEach(shape => {
+                        const cards = grid.querySelectorAll('.shape-card');
+                        cards.forEach(card => {
+                            const nameEl = card.querySelector('.shape-name');
+                            if (nameEl && nameEl.textContent.trim().toUpperCase() === shape.name.toUpperCase()) {
+                                const descEl = card.querySelector('.shape-desc');
+                                const tipEl = card.querySelector('.shape-tip');
+                                if (descEl && shape.description) descEl.textContent = shape.description;
+                                if (tipEl && shape.note) tipEl.textContent = shape.note;
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    } catch {
+        // Use static face shape data
+    }
+}
+
+/* ====================================================
    INIT
 ==================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthUI();
     renderGallery();
-    if (authToken && currentUser) loadHistory();
+
+    // Load data from backend
+    loadFaceShapes();
+    loadGalleryFromBackend();
+
+    if (isLoggedIn && currentUser) loadHistory();
 });
 
 // Keyboard: close modals on Escape
