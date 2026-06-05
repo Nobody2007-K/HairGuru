@@ -1,0 +1,30 @@
+# ── HAIRGURU — how to run ────────────────────────────────────────────────
+#
+# One-time setup
+#   Backend:   cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+#   Frontend:  cd Hairguru-main && npm install
+#   MediaPipe model: backend/models/face_landmarker.task (pip does NOT ship it). Re-download with:
+#              curl -L -o backend/models/face_landmarker.task \
+#                https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+#   Face-shape classifier: trained on the bundled labeled dataset (~4,500 photos).
+#              Produces backend/models/face_shape_model.joblib (held-out acc ~0.85). Run once:
+#              cd backend && ./venv/bin/python scripts/train_face_shape.py
+#   Gender model: InsightFace 'buffalo_l' auto-downloads to ~/.insightface on first analyze
+#              request (needs internet once). Disable with ENABLE_GENDER=0.
+#   Try-on model: InsightFace face-swap (inswapper). Download once (~once-off):
+#              cd backend && ./venv/bin/python scripts/download_tryon_model.py
+#              -> backend/models/inswapper_128.onnx. Runs locally on CPU (~2s/try-on).
+#              Disable with ENABLE_TRYON=0. HairFastGAN is no longer required.
+
+# Terminal 1: Start main backend  -> http://localhost:4000
+#   The frontend talks to this on port 4000 (see Hairguru-main/src/lib/api.ts).
+#   Face analysis, gender, recommendations, and virtual try-on all run here locally.
+cd backend && ./venv/bin/python run.py
+#   (equivalent: cd backend && ./venv/bin/uvicorn app.main:app --reload --port 4000)
+
+# Terminal 2: Start frontend  -> http://localhost:8080
+cd Hairguru-main && npm run dev
+
+# (Legacy/optional) HairFastGAN GAN server is no longer needed — try-on uses the
+# local face-swap above. Only run it if you specifically want the GAN pipeline:
+#   cd hairfast-api && python server.py   # needs the HairFastGAN repo + weights + torch
