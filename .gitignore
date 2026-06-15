@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+
+# Large ML model files (see backend/scripts/ to regenerate)
+backend/models/face_shape_model.joblib
+backend/models/inswapper_128.onnx
+
+# SQLite database files (auto-generated)
+*.db-shm
+*.db-wal
+
+# Editor
+.vscode/
+
+# Lock files
+package-lock.json
+bun.lock
+
+# Temp files
+make_commits.ps1
